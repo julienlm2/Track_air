@@ -1,14 +1,194 @@
 import 'package:flutter/material.dart';
+import 'PresetFormPage.dart';
+import 'dart:convert';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
 
-class Startpage extends StatelessWidget {
-  const Startpage({super.key}); 
+class Startpage extends StatefulWidget {
+  const Startpage({super.key});
+
+  @override
+  State<Startpage> createState() => _StartpageState();
+}
+
+class _StartpageState extends State<Startpage> {
+  List<Map<String, dynamic>> presets = [];
+  String? selectedPresetName;
+  Map<String, dynamic>? selectedPreset;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPresets();
+  }
+
+  Future<void> _loadPresets() async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final file = File('${directory.path}/presets.json');
+
+      if (await file.exists()) {
+        final content = await file.readAsString();
+        final jsonContent = json.decode(content);
+        setState(() {
+          presets = List<Map<String, dynamic>>.from(jsonContent['presets']);
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading presets: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Landing Page'),
+        title: const Text('Game configuration'),
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Card(
+              elevation: 4,
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Select Preset:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (presets.isEmpty)
+                      const Text(
+                        'No presets available. Create one by clicking the button below.',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.grey,
+                        ),
+                      )
+                    else
+                      DropdownButtonFormField<String>(
+                        decoration: const InputDecoration(
+                          border: OutlineInputBorder(),
+                          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        ),
+                        value: selectedPresetName,
+                        hint: const Text('Choose a preset'),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            selectedPresetName = newValue;
+                            selectedPreset = presets.firstWhere(
+                              (preset) => preset['presetName'] == newValue,
+                              orElse: () => {},
+                            );
+                          });
+                        },
+                        items: presets.map<DropdownMenuItem<String>>((preset) {
+                          return DropdownMenuItem<String>(
+                            value: preset['presetName'] as String,
+                            child: Text(preset['presetName'] as String),
+                          );
+                        }).toList(),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            if (selectedPreset != null) ...[
+              const SizedBox(height: 16),
+              Card(
+                elevation: 4,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Preset: ${selectedPreset!['presetName']}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Then replace the Text widget with:
+                      Text(
+                        'Created: ${DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(selectedPreset!['createdAt']).toLocal())}',
+                        style: const TextStyle(
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const Divider(),
+                      const Text(
+                        'Magazine Capacities:',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...(_buildMagazineList(selectedPreset!['parameters'] as Map<String, dynamic>)),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const Spacer(),
+            ElevatedButton.icon(
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PresetFormPage(),
+                  ),
+                );
+                // Reload presets when returning from the form
+                _loadPresets();
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add New Preset'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
+  List<Widget> _buildMagazineList(Map<String, dynamic> parameters) {
+    return parameters.entries.map((entry) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 4.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(entry.key),
+            Text(
+              '${entry.value} rounds',
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }).toList();
   }
+}
