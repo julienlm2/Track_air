@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 
 class Startpage extends StatefulWidget {
   const Startpage({super.key});
@@ -16,11 +18,21 @@ class _StartpageState extends State<Startpage> {
   List<Map<String, dynamic>> presets = [];
   String? selectedPresetName;
   Map<String, dynamic>? selectedPreset;
+  bool _isErgonomicMode = false;
+  static const String _ergonomicModeKey = 'ergonomicMode';
 
   @override
   void initState() {
     super.initState();
     _loadPresets();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isErgonomicMode = prefs.getBool(_ergonomicModeKey) ?? false;
+    });
   }
 
   Future<void> _loadPresets() async {
@@ -45,6 +57,38 @@ class _StartpageState extends State<Startpage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game configuration'),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _isErgonomicMode ? Colors.green.withOpacity(0.2) : Colors.blue.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isErgonomicMode ? Icons.accessibility_new : Icons.details,
+                      size: 16,
+                      color: _isErgonomicMode ? Colors.green : Colors.blue,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isErgonomicMode ? 'Ergonomic' : 'Detailed',
+                      style: TextStyle(
+                        color: _isErgonomicMode ? Colors.green : Colors.blue,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
