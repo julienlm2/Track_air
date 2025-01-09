@@ -4,8 +4,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/intl.dart';
+import 'DisplayPreset.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 
 class Startpage extends StatefulWidget {
   const Startpage({super.key});
@@ -54,6 +55,10 @@ class _StartpageState extends State<Startpage> {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+    ]);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Game configuration'),
@@ -210,6 +215,33 @@ class _StartpageState extends State<Startpage> {
                 ),
               ),
             ),
+            ElevatedButton.icon(
+              onPressed: selectedPreset != null
+                  ? () {
+                      Preset presetselec = Preset(
+                        name : selectedPreset?['presetName'],
+                        magazines : selectedPreset?['parameters'],
+                        date : selectedPreset?['createdAt'],
+                      );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => MagazineDisplay(preset: presetselec),
+                        ),
+                      );
+                    }
+                  : null, // Disable button if no preset is selectedconst Icon(Icons.add),
+              label: const Text('Add New Preset'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            )        
           ],
         ),
       ),
