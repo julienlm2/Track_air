@@ -1,9 +1,68 @@
 import 'package:flutter/material.dart';
 import 'package:track_air/ParametrePage.dart';
 import 'package:track_air/StartPage.dart';
+import 'package:track_air/HistoricAndStat.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class LandingPage extends StatelessWidget {
+class LandingPage extends StatefulWidget {
   const LandingPage({super.key});
+
+  @override
+  State<LandingPage> createState() => _LandingPageState();
+}
+
+class _LandingPageState extends State<LandingPage> {
+  String _selectedLanguage = 'English';
+  static const String _languageKey = 'language';
+
+  // Text translations
+  final Map<String, Map<String, String>> _translations = {
+    'English': {
+      'startGame': 'Start Game',
+      'historyStats': 'History & Statistics',
+      'settings': 'Settings',
+    },
+    'French': {
+      'startGame': 'Commencer la partie',
+      'historyStats': 'Historique & Statistiques',
+      'settings': 'Paramètres',
+    },
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLanguage();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Reload when returning to this screen
+    _loadLanguage();
+  }
+
+  Future<void> _loadLanguage() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedLanguage = prefs.getString(_languageKey) ?? 'English';
+    });
+  }
+
+  String getText(String key) {
+    return _translations[_selectedLanguage]?[key] ?? key;
+  }
+
+  Future<void> _navigateToSettingsAndRefresh(BuildContext context) async {
+    // Navigate to settings page
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const ParametrePage()),
+    );
+    
+    // Reload language settings when returning
+    _loadLanguage();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +127,7 @@ class LandingPage extends StatelessWidget {
                     // Military-styled buttons
                     _buildButton(
                       context,
-                      'Start Game',
+                      getText('startGame'),
                       Icons.play_arrow_rounded,
                       const Color(0xFF7D8B69), // Light olive
                       () => Navigator.push(context,
@@ -77,20 +136,19 @@ class LandingPage extends StatelessWidget {
                     const SizedBox(height: 20),
                     _buildButton(
                       context,
-                      'History & Statistics',
+                      getText('historyStats'),
                       Icons.bar_chart_rounded,
                       const Color(0xFF656D4A), // Military green
                       () => Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => const Startpage())),
+                          MaterialPageRoute(builder: (context) => const HistoricAndStat())),
                     ),
                     const SizedBox(height: 20),
                     _buildButton(
                       context,
-                      'Settings',
+                      getText('settings'),
                       Icons.settings_rounded,
                       const Color(0xFF4B5842), // Dark olive
-                      () => Navigator.push(context,
-                          MaterialPageRoute(builder: (context) => const ParametrePage())),
+                      () => _navigateToSettingsAndRefresh(context),
                     ),
                   ],
                 ),
